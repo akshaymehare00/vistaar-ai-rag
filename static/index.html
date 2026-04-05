@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vistaar AI — Business Intelligence Chatbot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:     #1F4E79;
+    --primary-lt:  #2E75B6;
+    --accent:      #F39C12;
+    --bg:          #F4F6F9;
+    --card:        #FFFFFF;
+    --border:      #D8DEE9;
+    --text:        #1A1A2E;
+    --muted:       #6B7280;
+    --user-bubble: #1F4E79;
+    --bot-bubble:  #FFFFFF;
+    --success:     #27AE60;
+    --danger:      #E74C3C;
+    --sidebar-w:   280px;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--primary);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .sidebar-logo h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+  }
+  .sidebar-logo p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 2px;
+  }
+
+  .sidebar-section {
+    padding: 16px 20px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .company-list { padding: 0 12px; }
+
+  .company-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+  .company-btn:hover { background: rgba(255,255,255,0.1); }
+  .company-btn.active {
+    background: rgba(255,255,255,0.18);
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+  .company-avatar {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .company-info { flex: 1; }
+  .company-info small {
+    display: block;
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 1px;
+  }
+
+  .sidebar-section-divider {
+    margin: 12px 20px;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .quick-prompts { padding: 0 12px 12px; }
+  .quick-prompt-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: transparent;
+    color: rgba(255,255,255,0.65);
+    font-size: 11.5px;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 6px;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .quick-prompt-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border-color: rgba(255,255,255,0.3);
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.5;
+  }
+
+  /* ── Main chat area ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-left h2 { font-size: 16px; font-weight: 600; }
+  .topbar-left p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .status-dot.online  { background: var(--success); }
+  .status-dot.offline { background: var(--danger); }
+
+  .topbar-right {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .filter-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .clear-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .clear-btn:hover { background: #fee; border-color: var(--danger); color: var(--danger); }
+
+  /* ── Messages ── */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .welcome-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    max-width: 560px;
+    margin: 20px auto 0;
+  }
+  .welcome-card .icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+  }
+  .welcome-card h3 { font-size: 18px; margin-bottom: 6px; }
+  .welcome-card p  { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .welcome-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    justify-content: center; margin-top: 14px;
+  }
+  .welcome-tag {
+    padding: 4px 10px;
+    background: #EBF2FB;
+    color: var(--primary);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .msg-row {
+    display: flex;
+    gap: 10px;
+    max-width: 800px;
+  }
+  .msg-row.user { flex-direction: row-reverse; margin-left: auto; }
+  .msg-row.bot  { margin-right: auto; }
+
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .avatar.user { background: var(--user-bubble); color: #fff; font-size: 12px; }
+  .avatar.bot  { background: var(--accent); color: #fff; font-size: 16px; }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  .bubble.user {
+    background: var(--user-bubble);
+    color: #fff;
+    border-top-right-radius: 3px;
+  }
+  .bubble.bot {
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-top-left-radius: 3px;
+  }
+
+  .sources-toggle {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--primary-lt);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none; background: none; padding: 0;
+  }
+  .sources-toggle:hover { text-decoration: underline; }
+
+  .sources-panel {
+    margin-top: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+  .source-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: #F9FAFB;
+  }
+  .source-item:last-child { border-bottom: none; }
+  .source-item .source-meta {
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
+  .source-item .source-text { color: var(--muted); line-height: 1.4; }
+  .score-badge {
+    float: right;
+    background: #EBF2FB;
+    color: var(--primary);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .thinking {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    border-top-left-radius: 3px;
+    font-size: 13px; color: var(--muted);
+    width: fit-content;
+  }
+  .dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--primary-lt);
+    animation: bounce 1.2s infinite;
+    margin: 0 1px;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40%            { transform: translateY(-6px); opacity: 1; }
+  }
+
+  .error-bubble {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: var(--danger);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* ── Input bar ── */
+  .input-bar {
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    flex-shrink: 0;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .input-wrapper {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    display: flex;
+    align-items: flex-end;
+    padding: 4px 4px 4px 14px;
+    transition: border-color 0.15s;
+  }
+  .input-wrapper:focus-within { border-color: var(--primary-lt); }
+
+  #userInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    resize: none;
+    outline: none;
+    padding: 8px 0;
+    min-height: 40px;
+    max-height: 120px;
+    line-height: 1.5;
+  }
+
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover   { background: var(--primary-lt); }
+  .send-btn:active  { transform: scale(0.95); }
+  .send-btn:disabled { background: #B0BEC5; cursor: not-allowed; }
+
+  .input-hint {
+    font-size: 11px; color: var(--muted);
+    margin-top: 6px; text-align: center;
+  }
+
+  /* ── Scrollbar ── */
+  .messages::-webkit-scrollbar { width: 5px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>VISTAAR</h1>
+    <p>Manufacturing Intelligence Platform</p>
+  </div>
+
+  <div class="sidebar-section">Select Company</div>
+  <div class="company-list" id="companyList">
+    <button class="company-btn active" data-id="acme_corp" onclick="selectCompany(this)">
+      <div class="company-avatar" style="background:#2E86C1;color:#fff">AC</div>
+      <div class="company-info">
+        Acme Corp
+        <small>Sales data</small>
+      </div>
+    </button>
+    <button class="company-btn" data-id="beta_ltd" onclick="selectCompany(this)">
+      <div class="company-avatar" style="background:#1E8449;color:#fff">BL</div>
+      <div class="company-info">
+        Beta Ltd
+        <small>Production data</small>
+      </div>
+    </button>
+    <button class="company-btn" data-id="gamma_inc" onclick="selectCompany(this)">
+      <div class="company-avatar" style="background:#7D3C98;color:#fff">GI</div>
+      <div class="company-info">
+        Gamma Inc
+        <small>Finance data</small>
+      </div>
+    </button>
+  </div>
+
+  <hr class="sidebar-section-divider"/>
+  <div class="sidebar-section">Quick Prompts</div>
+  <div class="quick-prompts" id="quickPrompts">
+    <!-- filled by JS based on selected company -->
+  </div>
+
+  <div class="sidebar-footer">
+    Vistaar v1.0 &nbsp;·&nbsp; Local RAG Pipeline<br/>
+    Powered by Ollama + Qdrant + LlamaIndex
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h2 id="topbarTitle">Acme Corp — AI Chat</h2>
+      <p id="topbarSub">
+        <span class="status-dot online" id="statusDot"></span>
+        <span id="statusText">Connected to Vistaar backend</span>
+      </p>
+    </div>
+    <div class="topbar-right">
+      <select class="filter-select" id="dataTypeFilter">
+        <option value="">All data types</option>
+        <option value="sales">Sales</option>
+        <option value="production">Production</option>
+        <option value="finance">Finance</option>
+      </select>
+      <button class="clear-btn" onclick="clearChat()">Clear chat</button>
+    </div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="welcome-card" id="welcomeCard">
+      <div class="icon">🏭</div>
+      <h3>Welcome to Vistaar AI</h3>
+      <p>Ask questions about your company's sales, production, or finance data in plain language. The AI retrieves relevant data and generates precise answers.</p>
+      <div class="welcome-tags">
+        <span class="welcome-tag">RAG Powered</span>
+        <span class="welcome-tag">Local &amp; Private</span>
+        <span class="welcome-tag">Multi-company</span>
+        <span class="welcome-tag">Manufacturing BI</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <div class="input-row">
+      <div class="input-wrapper">
+        <textarea id="userInput"
+          placeholder="Ask about sales, production, finance... (Enter to send)"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+        &#9658;
+      </button>
+    </div>
+    <div class="input-hint">Select a company from the sidebar · Use quick prompts to get started</div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+
+let selectedCompany  = "acme_corp";
+let selectedCompanyName = "Acme Corp";
+let isLoading = false;
+
+const QUICK_PROMPTS = {
+  acme_corp: [
+    "What was the total revenue in Q3 2024?",
+    "Which product had the highest sales?",
+    "Compare July vs September performance",
+    "Which region performed best?",
+    "What is the achievement % for Widget A?",
+  ],
+  beta_ltd: [
+    "What was the overall production efficiency?",
+    "Which line had the most downtime?",
+    "Compare Q1 vs Q2 production output",
+    "Which product had the most defects?",
+    "Which shift performed best?",
+  ],
+  gamma_inc: [
+    "What is the Q3 EBITDA margin?",
+    "Which department is over budget?",
+    "Show revenue growth from Q1 to Q3",
+    "What is the net profit for Q3 2024?",
+    "Which department has the highest cost per head?",
+  ],
+};
+
+const COMPANY_NAMES = {
+  acme_corp: "Acme Corp",
+  beta_ltd:  "Beta Ltd",
+  gamma_inc: "Gamma Inc",
+};
+
+function renderQuickPrompts() {
+  const container = document.getElementById("quickPrompts");
+  const prompts = QUICK_PROMPTS[selectedCompany] || [];
+  container.innerHTML = prompts.map(p =>
+    `<button class="quick-prompt-btn" onclick="fillPrompt('${p.replace(/'/g,"\\'")}')">
+       ${p}
+     </button>`
+  ).join("");
+}
+
+function fillPrompt(text) {
+  const input = document.getElementById("userInput");
+  input.value = text;
+  autoResize(input);
+  input.focus();
+}
+
+function selectCompany(btn) {
+  document.querySelectorAll(".company-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedCompany = btn.dataset.id;
+  selectedCompanyName = COMPANY_NAMES[selectedCompany];
+  document.getElementById("topbarTitle").textContent = `${selectedCompanyName} — AI Chat`;
+  renderQuickPrompts();
+}
+
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 120) + "px";
+}
+
+function handleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function scrollToBottom() {
+  const m = document.getElementById("messages");
+  m.scrollTop = m.scrollHeight;
+}
+
+function appendUserMsg(text) {
+  const el = document.createElement("div");
+  el.className = "msg-row user";
+  el.innerHTML = `
+    <div class="bubble user">${escapeHtml(text)}</div>
+    <div class="avatar user">You</div>
+  `;
+  document.getElementById("messages").appendChild(el);
+  scrollToBottom();
+}
+
+function appendThinking() {
+  const el = document.createElement("div");
+  el.className = "msg-row bot";
+  el.id = "thinkingRow";
+  el.innerHTML = `
+    <div class="avatar bot">V</div>
+    <div class="thinking">
+      <div class="dots"><span></span><span></span><span></span></div>
+      Vistaar is thinking...
+    </div>
+  `;
+  document.getElementById("messages").appendChild(el);
+  scrollToBottom();
+  return el;
+}
+
+function removeThinking() {
+  const el = document.getElementById("thinkingRow");
+  if (el) el.remove();
+}
+
+function appendBotMsg(answer, sources) {
+  const el = document.createElement("div");
+  el.className = "msg-row bot";
+
+  const sourcesId = "src_" + Date.now();
+  const srcHtml = sources && sources.length
+    ? `<button class="sources-toggle" onclick="toggleSources('${sourcesId}')">
+         &#128196; ${sources.length} source chunk${sources.length > 1 ? "s" : ""} ▾
+       </button>
+       <div id="${sourcesId}" class="sources-panel" style="display:none">
+         ${sources.map(s => `
+           <div class="source-item">
+             <div class="source-meta">
+               <span class="score-badge">${s.score != null ? "score: "+s.score : ""}</span>
+               ${s.source_file} › ${s.sheet} (${s.data_type})
+             </div>
+             <div class="source-text">${escapeHtml(s.text)}</div>
+           </div>`).join("")}
+       </div>`
+    : "";
+
+  el.innerHTML = `
+    <div class="avatar bot">V</div>
+    <div>
+      <div class="bubble bot">${formatAnswer(answer)}</div>
+      ${srcHtml}
+    </div>
+  `;
+  document.getElementById("messages").appendChild(el);
+  scrollToBottom();
+}
+
+function appendError(msg) {
+  const el = document.createElement("div");
+  el.className = "msg-row bot";
+  el.innerHTML = `
+    <div class="avatar bot">V</div>
+    <div class="error-bubble">⚠ ${escapeHtml(msg)}</div>
+  `;
+  document.getElementById("messages").appendChild(el);
+  scrollToBottom();
+}
+
+function toggleSources(id) {
+  const panel = document.getElementById(id);
+  if (panel) panel.style.display = panel.style.display === "none" ? "block" : "none";
+}
+
+function formatAnswer(text) {
+  // Simple formatting: bold numbers with ₹, newlines to <br>
+  return escapeHtml(text)
+    .replace(/\n/g, "<br>")
+    .replace(/(₹[\d,]+)/g, "<strong>$1</strong>");
+}
+
+function escapeHtml(str) {
+  const d = document.createElement("div");
+  d.appendChild(document.createTextNode(str || ""));
+  return d.innerHTML;
+}
+
+function clearChat() {
+  const m = document.getElementById("messages");
+  m.innerHTML = `
+    <div class="welcome-card" id="welcomeCard">
+      <div class="icon">🏭</div>
+      <h3>Chat cleared</h3>
+      <p>Select a company and ask a new question.</p>
+    </div>`;
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+
+  const input  = document.getElementById("userInput");
+  const question = input.value.trim();
+  if (!question) return;
+
+  const dataType = document.getElementById("dataTypeFilter").value || null;
+
+  // Hide welcome card
+  const wc = document.getElementById("welcomeCard");
+  if (wc) wc.style.display = "none";
+
+  input.value = "";
+  autoResize(input);
+
+  appendUserMsg(question);
+  appendThinking();
+
+  isLoading = true;
+  document.getElementById("sendBtn").disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        company_id: selectedCompany,
+        data_type:  dataType,
+      }),
+    });
+
+    removeThinking();
+
+    if (!res.ok) {
+      const err = await res.json();
+      appendError(err.detail || "Server error. Please try again.");
+    } else {
+      const data = await res.json();
+      appendBotMsg(data.answer, data.sources);
+    }
+  } catch (e) {
+    removeThinking();
+    appendError(
+      "Cannot reach the Vistaar backend at " + API_BASE +
+      ". Make sure you ran: uvicorn main:app --reload --port 8000"
+    );
+  } finally {
+    isLoading = false;
+    document.getElementById("sendBtn").disabled = false;
+    input.focus();
+  }
+}
+
+// Init
+renderQuickPrompts();
+
+// Check backend health
+(async () => {
+  try {
+    const res = await fetch(`${API_BASE}/health`);
+    if (res.ok) {
+      document.getElementById("statusText").textContent = "Backend connected ✓";
+    } else { throw new Error(); }
+  } catch {
+    document.getElementById("statusDot").className = "status-dot offline";
+    document.getElementById("statusText").textContent =
+      "Backend offline — run uvicorn main:app --port 8000";
+  }
+})();
+</script>
+</body>
+</html>
